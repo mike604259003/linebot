@@ -10,7 +10,7 @@ require 'src/Command.php';
 use thiagoalessio\TesseractOCR\TesseractOCR;
 
 
-$API_URL = 'https://api.line.me/v2/bot/message';
+
 $channelAccessToken = 'zRbEGHClfreKxlcxZ/adCxhEuRRSnf0lfp3B/K9bvnzhC+VsbH5f0P3eqVskhPfw1XW/ZZSul7uEmb7PtWyO3h2MTsAifneys8b6SRiQntjgn3wy/U6OTUU3wpY0Ns9GD+/tSfpJNsy9iuuAGOcS5gdB04t89/1O/w1cDnyilFU='; 
 $channelSecret = '265ac4b28a50be5a01764520dd1a626a';
 
@@ -37,7 +37,7 @@ foreach ($client->parseEvents() as $event) {
                 
                 case 'image':
                     $url = $_SERVER['HTTP_HOST'];
-                    $webdir = '/line/';
+                    $webdir = '/linebot/';
                     $imagepath = 'img/';
                     $imagename = 'image_'.date('Ymdhis').'.jpg';
                     $imageData = $client->getImage($message['id']);

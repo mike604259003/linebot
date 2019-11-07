@@ -41,8 +41,6 @@ foreach ($client->parseEvents() as $event) {
                     $imagepath = 'img/';
                     $imagename = 'image_'.date('Ymdhis').'.jpg';
                     $imageData = $client->getImage($message['id']);
-                
-                    $imageData = $client->getImage($message['id']);
                     $save_result = file_put_contents($imagepath.$imagename,$imageData);
 
                     $rs ="";

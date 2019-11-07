@@ -65,10 +65,6 @@ foreach ($client->parseEvents() as $event) {
                             ],
                             [
                                 'type' => 'text',
-                                'text' => 'id >>'.$message['id']
-                            ],
-                            [
-                                'type' => 'text',
                                 'text' => 'id >>'.$imageData
                             ],
                             [

@@ -57,7 +57,7 @@ foreach ($client->parseEvents() as $event) {
                     }else{
                         $rs = "n\a";
                     }
-                    insertDB($imagepath.$imagename);
+            
                     $client->replyMessage([
                         'replyToken' => $event['replyToken'],
                         'messages' => [

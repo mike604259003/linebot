@@ -1,56 +1,126 @@
 <?php
+require_once('LINEBotTiny.php');
+require_once('LINEFunction.php');
+require_once('dialogflow.php');
+require_once('flex.php');
+require 'src/TesseractOCR.php';
+require 'src/FriendlyErrors.php';
+require 'src/Option.php';
+require 'src/Command.php';
+use thiagoalessio\TesseractOCR\TesseractOCR;
 
 
 $API_URL = 'https://api.line.me/v2/bot/message';
-$ACCESS_TOKEN = 'zRbEGHClfreKxlcxZ/adCxhEuRRSnf0lfp3B/K9bvnzhC+VsbH5f0P3eqVskhPfw1XW/ZZSul7uEmb7PtWyO3h2MTsAifneys8b6SRiQntjgn3wy/U6OTUU3wpY0Ns9GD+/tSfpJNsy9iuuAGOcS5gdB04t89/1O/w1cDnyilFU='; 
+$channelAccessToken = 'zRbEGHClfreKxlcxZ/adCxhEuRRSnf0lfp3B/K9bvnzhC+VsbH5f0P3eqVskhPfw1XW/ZZSul7uEmb7PtWyO3h2MTsAifneys8b6SRiQntjgn3wy/U6OTUU3wpY0Ns9GD+/tSfpJNsy9iuuAGOcS5gdB04t89/1O/w1cDnyilFU='; 
 $channelSecret = '265ac4b28a50be5a01764520dd1a626a';
 
-
-$POST_HEADER = array('Content-Type: application/json', 'Authorization: Bearer ' . $ACCESS_TOKEN);
-
-$request = file_get_contents('php://input');   // Get request content
-$request_array = json_decode($request, true);   // Decode JSON to Array
+$client = new LINEBotTiny($channelAccessToken, $channelSecret);
+$dialogflow = new dialogFlow();
 
 
+foreach ($client->parseEvents() as $event) {
+    switch ($event['type']) {
+        case 'message':
+            $message = $event['message'];
+            switch ($message['type']) {
+                case 'text':
+                    $client->replyMessage([
+                        'replyToken' => $event['replyToken'],
+                        'messages' => [
+                            [
+                                'type' => 'text',
+                                'text' => $message['text']
+                            ]
+                        ]
+                    ]);
+                    break;
+                
+                case 'image':
+                    $url = $_SERVER['HTTP_HOST'];
+                    $webdir = '/line/';
+                    $imagepath = 'img/';
+                    $imagename = 'image_'.date('Ymdhis').'.jpg';
+                    $imageData = $client->getImage($message['id']);
+                
+                    $imageData = $client->getImage($message['id']);
+                    $save_result = file_put_contents($imagepath.$imagename,$imageData);
 
-if ( sizeof($request_array['events']) > 0 ) {
+                    $rs ="";
+                    if($save_result!=""){
+                        $im = imagecreatefromjpeg($imagepath.$imagename);
+                        if($im && imagefilter($im, IMG_FILTER_GRAYSCALE)){
+                            imagejpeg($im,$imagepath.$imagename);
+                            imagedestroy($im);
+                             $rs = (new TesseractOCR($imagepath.$imagename))->lang('eng',)->run();
+                        }
+                       
+                    }else{
+                        $rs = "n\a";
+                    }
+                    insertDB($imagepath.$imagename);
+                    $client->replyMessage([
+                        'replyToken' => $event['replyToken'],
+                        'messages' => [
+                            [
+                                'type' => 'text',
+                                'text' => 'SAVE IMAGE>>'.$rs
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => 'id >>'.$message['id']
+                            ],
+                            [
+                                "type"=> "image",
+                                "originalContentUrl"=> "https://".$url.$webdir.$imagepath.$imagename,
+                                "previewImageUrl"=> "https://".$url.$webdir.$imagepath.$imagename
+                            ]
+                        ]
+                    ]);
+                    break;
+                
+                    case 'location':
+                   
+                    $client->replyMessage([
+                        'replyToken' => $event['replyToken'],
+                        'messages' => [
+                            [
+                                'type' => 'text',
+                                'text' => ">> \n".$message['title']."\n".$message['address']."\n".$message['latitude']."\n".$message['longitude']
+                            ]
+                           
+                        ]
+                    ]);
+                    break;
 
-    foreach ($request_array['events'] as $event) {
 
-        $reply_message = '';
-        $reply_token = $event['replyToken'];
+                    case 'sticker':
+                   
+                    $client->replyMessage([
+                        'replyToken' => $event['replyToken'],
+                        'messages' => [
+                            [
+                                "type"=> "text",
+                                'text' => $message['packageId']."\n".$message['stickerId']
+                            ],
+                            [
+                                "type"=> "sticker",
+                                "packageId"=> $message['packageId'],
+                                "stickerId"=> $message['stickerId']
+                            ]
+                           
+                        ]
+                    ]);
+                    break;
 
-        $text = $event['message']['text'];
-        $data = [
-            'replyToken' => $reply_token,
-            'messages' => [['type' => 'text', 'text' => json_encode($request_array) ]]  
-            //'messages' => [['type' => 'text', 'text' => $text ]]
-        ];
-        $post_body = json_encode($data, JSON_UNESCAPED_UNICODE);
 
-        $send_result = send_reply_message($API_URL.'/reply', $POST_HEADER, $post_body);
-
-        echo "Result: ".$send_result."\r\n";
+                default:
+                    error_log('Unsupported message type: ' . $message['type']);
+                    break;
+            }
+            break;
+        default:
+            error_log('Unsupported event type: ' . $event['type']);
+            break;
     }
-}
-
-echo "OK";
-
-
-
-
-function send_reply_message($url, $post_header, $post_body)
-{
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $post_header);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    $result = curl_exec($ch);
-    curl_close($ch);
-
-    return $result;
-}
-
+};
 ?>

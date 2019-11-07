@@ -68,6 +68,10 @@ foreach ($client->parseEvents() as $event) {
                                 'text' => 'id >>'.$message['id']
                             ],
                             [
+                                'type' => 'text',
+                                'text' => 'id >>'.$imageData
+                            ],
+                            [
                                 "type"=> "image",
                                 "originalContentUrl"=> "https://".$url.$webdir.$imagepath.$imagename,
                                 "previewImageUrl"=> "https://".$url.$webdir.$imagepath.$imagename
